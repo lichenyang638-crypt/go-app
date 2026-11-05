@@ -1,0 +1,26 @@
+name: Build Unsigned iOS IPA
+on: [push, workflow_dispatch]
+jobs:
+  build:
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - name: Install dependencies
+        run: npm install
+      - name: Expo Prebuild
+        run: npx expo prebuild --platform ios
+      - name: Build Unsigned IPA
+        run: |
+          cd ios
+          xcodebuild -workspace *.xcworkspace -scheme $(basename *.xcworkspace .xcworkspace) -configuration Release -sdk iphoneos -derivedDataPath build CODE_SIGNING_ALLOWED=NO
+          mkdir Payload
+          cp -r build/Build/Products/Release-iphoneos/*.app Payload/
+          zip -r Go.ipa Payload
+      - name: Upload IPA
+        uses: actions/upload-artifact@v4
+        with:
+          name: unsigned-ipa
+          path: ios/Go.ipa
